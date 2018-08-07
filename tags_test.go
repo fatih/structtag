@@ -188,11 +188,18 @@ func TestTags_Get(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := `json:"foo,omitempty"`
-
-	if found.String() != want {
-		t.Errorf("get\n\twant: %#v\n\tgot : %#v", want, found.String())
-	}
+	t.Run("String", func(t *testing.T) {
+		want := `json:"foo,omitempty"`
+		if found.String() != want {
+			t.Errorf("get\n\twant: %#v\n\tgot : %#v", want, found.String())
+		}
+	})
+	t.Run("Value", func(t *testing.T) {
+		want := `foo,omitempty`
+		if found.Value() != want {
+			t.Errorf("get\n\twant: %#v\n\tgot : %#v", want, found.Value())
+		}
+	})
 }
 
 func TestTags_Set(t *testing.T) {
