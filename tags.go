@@ -265,6 +265,35 @@ func (t *Tag) HasOption(opt string) bool {
 	return false
 }
 
+// SetOption sets the given option into tag if it is not existed.
+func (t *Tag) SetOption(opt string) {
+	for _, tagOpt := range t.Options {
+		if tagOpt == opt {
+			return
+		}
+	}
+	t.Options = append(t.Options, opt)
+}
+
+// DeleteOption deletes the given option to tag if it is not existed.
+func (t *Tag) DeleteOption(options ...string) {
+	hasOption := func(option string) bool {
+		for _, opt := range options {
+			if opt == option {
+				return true
+			}
+		}
+		return false
+	}
+	var updated []string
+	for _, opt := range t.Options {
+		if !hasOption(opt) {
+			updated = append(updated, opt)
+		}
+	}
+	t.Options = updated
+}
+
 // Value returns the raw value of the tag, i.e. if the tag is
 // `json:"foo,omitempty", the Value is "foo,omitempty"
 func (t *Tag) Value() string {
