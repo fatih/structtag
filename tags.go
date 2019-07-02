@@ -265,17 +265,17 @@ func (t *Tag) HasOption(opt string) bool {
 	return false
 }
 
-// SetOption sets the given option into tag if it is not existed.
-func (t *Tag) SetOption(opt string) {
-	for _, tagOpt := range t.Options {
-		if tagOpt == opt {
-			return
+// AddOption sets the given options into tag.
+// If the option already exists it doesn't add it again.
+func (t *Tag) AddOption(options ...string) {
+	for _, opt := range options {
+		if !t.HasOption(opt) {
+			t.Options = append(t.Options, opt)
 		}
 	}
-	t.Options = append(t.Options, opt)
 }
 
-// DeleteOption deletes the given option to tag if it is not existed.
+// DeleteOption deletes the given options from the tag.
 func (t *Tag) DeleteOption(options ...string) {
 	hasOption := func(option string) bool {
 		for _, opt := range options {
