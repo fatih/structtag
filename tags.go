@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -94,10 +93,8 @@ func Parse(tag string) (*Tags, error) {
 		qvalue := string(tag[:i+1])
 		tag = tag[i+1:]
 
-		value, err := strconv.Unquote(qvalue)
-		if err != nil {
-			return nil, errTagValueSyntax
-		}
+		// trim quotes
+		value := qvalue[1 : len(qvalue)-1]
 
 		res := strings.Split(value, ",")
 		name := res[0]

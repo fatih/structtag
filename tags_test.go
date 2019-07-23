@@ -151,6 +151,17 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "tag with quoted name",
+			tag:  `json:"foo,bar:\"baz\""`,
+			exp: []*Tag{
+				{
+					Key:     "json",
+					Name:    "foo",
+					Options: []string{`bar:\"baz\"`},
+				},
+			},
+		},
 	}
 
 	for _, ts := range test {
