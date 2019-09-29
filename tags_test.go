@@ -151,6 +151,17 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "tag with quoted name",
+			tag:  `json:"foo,bar:\"baz\""`,
+			exp: []*Tag{
+				{
+					Key:     "json",
+					Name:    "foo",
+					Options: []string{`bar:"baz"`},
+				},
+			},
+		},
 	}
 
 	for _, ts := range test {
@@ -167,9 +178,12 @@ func TestParse(t *testing.T) {
 			}
 
 			got := tags.Tags()
-
 			if !reflect.DeepEqual(ts.exp, got) {
 				t.Errorf("parse\n\twant: %#v\n\tgot : %#v", ts.exp, got)
+			}
+
+			if ts.tag != tags.String() {
+				t.Errorf("parse string\n\twant: %#v\n\tgot : %#v", ts.tag, tags.String())
 			}
 		})
 	}

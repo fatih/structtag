@@ -277,7 +277,7 @@ func (t *Tag) Value() string {
 
 // String reassembles the tag into a valid tag field representation
 func (t *Tag) String() string {
-	return fmt.Sprintf(`%s:"%s"`, t.Key, t.Value())
+	return fmt.Sprintf(`%s:%q`, t.Key, t.Value())
 }
 
 // GoString implements the fmt.GoStringer interface
