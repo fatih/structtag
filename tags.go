@@ -42,6 +42,8 @@ type Tag struct {
 func Parse(tag string) (*Tags, error) {
 	var tags []*Tag
 
+	hasTag := tag != ""
+
 	// NOTE(arslan) following code is from reflect and vet package with some
 	// modifications to collect all necessary information and extend it with
 	// usable methods
@@ -53,7 +55,7 @@ func Parse(tag string) (*Tags, error) {
 		}
 		tag = tag[i:]
 		if tag == "" {
-			return nil, nil
+			break
 		}
 
 		// Scan to colon. A space, a quote or a control character is a syntax
@@ -111,6 +113,10 @@ func Parse(tag string) (*Tags, error) {
 			Name:    name,
 			Options: options,
 		})
+	}
+
+	if hasTag && len(tags) == 0 {
+		return nil, nil
 	}
 
 	return &Tags{
