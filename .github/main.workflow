@@ -1,23 +1,25 @@
-workflow "Build and Test" {
-  on = "pull_request"
-  resolves = ["go test"]
-}
+name: build
+on: [push, pull_request]
+jobs:
 
-action "go build" {
-  uses = "docker://golang:1.12.7"
-  runs = "go"
-  args = "build ./..."
-  env = {
-    GOPROXY = "https://proxy.golang.org"
-  }
-}
+  test-build:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    steps:
 
-action "go test" {
-  uses = "docker://golang:1.12.7"
-  needs = ["go build"]
-  runs = "go"
-  args = "test -v -cover -race ./..."
-  env = {
-    GOPROXY = "https://proxy.golang.org"
-  }
-}
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v1
+      
+    - name: Test
+      run: |
+        go mod tidy -v
+        go test -race ./...
+
+    - name: Build
+      run: go build ./...
