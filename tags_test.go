@@ -20,12 +20,7 @@ func TestParse(t *testing.T) {
 			tag:  "",
 		},
 		{
-			name:    "tag with one key (invalid)",
-			tag:     "json",
-			invalid: true,
-		},
-		{
-			name: "tag with one key (valid)",
+			name: "tag with one key",
 			tag:  `json:""`,
 			exp: []*Tag{
 				{
@@ -168,6 +163,63 @@ func TestParse(t *testing.T) {
 			name: "tag with trailing space",
 			tag:  `json:"foo" `,
 			exp: []*Tag{
+				{
+					Key:  "json",
+					Name: "foo",
+				},
+			},
+		},
+		{
+			name: "plain tag",
+			tag:  `list`,
+			exp: []*Tag{
+				{
+					Key:   "list",
+					Name:  "",
+					Plain: true,
+				},
+			},
+		},
+		{
+			name: "two plain tags",
+			tag:  `list another`,
+			exp: []*Tag{
+				{
+					Key:   "list",
+					Name:  "",
+					Plain: true,
+				},
+				{
+					Key:   "another",
+					Name:  "",
+					Plain: true,
+				},
+			},
+		},
+		{
+			name: "plain tag after regular tag",
+			tag:  `json:"foo" list`,
+			exp: []*Tag{
+				{
+					Key:  "json",
+					Name: "foo",
+				},
+				{
+					Key:   "list",
+					Name:  "",
+					Plain: true,
+				},
+			},
+		},
+		{
+			name: "regular tag after plain tag",
+			tag:  `list json:"foo"`,
+			exp: []*Tag{
+				{
+					Key:   "list",
+					Name:  "",
+					Plain: true,
+				},
 				{
 					Key:  "json",
 					Name: "foo",

@@ -36,6 +36,9 @@ type Tag struct {
 	// Options is a part of the value. It contains a slice of tag options i.e:
 	// `json:"foo,omitempty". Here options is: ["omitempty"]
 	Options []string
+
+	// Plain is set iff the tag was just a key, e.g. just `list`.
+	Plain bool
 }
 
 // Parse parses a single struct field tag and returns the set of tags.
@@ -71,14 +74,28 @@ func Parse(tag string) (*Tags, error) {
 		if i == 0 {
 			return nil, errTagKeySyntax
 		}
-		if i+1 >= len(tag) || tag[i] != ':' {
+		key := string(tag[:i])
+		if i+1 >= len(tag) || tag[i] == ' ' {
+			tags = append(tags, &Tag{
+				Key:     key,
+				Name:    "",
+				Options: nil,
+				Plain:   true,
+			})
+
+			if i+1 >= len(tag) {
+				break
+			}
+			tag = tag[i+1:]
+			continue
+		}
+		if tag[i] != ':' {
 			return nil, errTagSyntax
 		}
 		if tag[i+1] != '"' {
 			return nil, errTagValueSyntax
 		}
 
-		key := string(tag[:i])
 		tag = tag[i+1:]
 
 		// Scan quoted string to find value.
@@ -112,6 +129,7 @@ func Parse(tag string) (*Tags, error) {
 			Key:     key,
 			Name:    name,
 			Options: options,
+			Plain:   false,
 		})
 	}
 
@@ -283,6 +301,9 @@ func (t *Tag) Value() string {
 
 // String reassembles the tag into a valid tag field representation
 func (t *Tag) String() string {
+	if t.Plain {
+		return t.Key
+	}
 	return fmt.Sprintf(`%s:%q`, t.Key, t.Value())
 }
 
@@ -292,14 +313,15 @@ func (t *Tag) GoString() string {
 		Key:    '%s',
 		Name:   '%s',
 		Option: '%s',
+		Plain:  '%t',
 	}`
 
 	if t.Options == nil {
-		return fmt.Sprintf(template, t.Key, t.Name, "nil")
+		return fmt.Sprintf(template, t.Key, t.Name, "nil", t.Plain)
 	}
 
 	options := strings.Join(t.Options, ",")
-	return fmt.Sprintf(template, t.Key, t.Name, options)
+	return fmt.Sprintf(template, t.Key, t.Name, options, t.Plain)
 }
 
 func (t *Tags) Len() int {
