@@ -1,7 +1,6 @@
 # structtag [![](https://github.com/fatih/structtag/workflows/build/badge.svg)](https://github.com/fatih/structtag/actions)
 
 structtag provides an easy way of parsing and manipulating struct tag fields.
-Please vendor the library as it might change in future versions.
 
 # Install
 
