@@ -1,6 +1,6 @@
-# structtag [![](https://github.com/fatih/structtag/workflows/build/badge.svg)](https://github.com/fatih/structtag/actions)
+# structtag [![](https://github.com/fatih/structtag/workflows/build/badge.svg)](https://github.com/fatih/structtag/actions) [![PkgGoDev](https://pkg.go.dev/badge/github.com/fatih/structtag)](https://pkg.go.dev/github.com/fatih/structtag)
 
-structtag provides an easy way of parsing and manipulating struct tag fields.
+structtag provides a way of parsing and manipulating struct tag Go fields. It's used by tools like [gomodifytags](https://github.com/fatih/gomodifytags). For more examples, checkout [the projects using structtag](https://pkg.go.dev/github.com/fatih/structtag?tab=importedby).
 
 # Install
 
