@@ -10,10 +10,11 @@ import (
 func TestParse(t *testing.T) {
 
 	test := []struct {
-		name    string
-		tag     string
-		exp     []*Tag
-		invalid bool
+		name           string
+		tag            string
+		exp            []*Tag
+		invalid        bool
+		isMultipleKeys bool
 	}{
 		{
 			name: "empty tag",
@@ -73,20 +74,6 @@ func TestParse(t *testing.T) {
 				},
 				{
 					Key: "hcl",
-				},
-			},
-		},
-		{
-			name: "tag with multiple keys and names",
-			tag:  `json:"foo" hcl:"foo"`,
-			exp: []*Tag{
-				{
-					Key:  "json",
-					Name: "foo",
-				},
-				{
-					Key:  "hcl",
-					Name: "foo",
 				},
 			},
 		},
@@ -174,6 +161,72 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "tag with multiple space-separated key (valid)",
+			tag:  `json bson:""`,
+			exp: []*Tag{
+				{
+					Key: "json",
+				},
+				{
+					Key: "bson",
+				},
+			},
+			isMultipleKeys: true,
+		},
+		{
+			name: "tag with multiple space-separated keys with name and option",
+			tag:  `json bson xml:"foo,omitempty"`,
+			exp: []*Tag{
+				{
+					Key:     "json",
+					Name:    "foo",
+					Options: []string{"omitempty"},
+				},
+				{
+					Key:     "bson",
+					Name:    "foo",
+					Options: []string{"omitempty"},
+				},
+				{
+					Key:     "xml",
+					Name:    "foo",
+					Options: []string{"omitempty"},
+				},
+			},
+			isMultipleKeys: true,
+		},
+		{
+			name: "tag with multiple space-separated keys with name and option, and also other different key/value pairs",
+			tag:  `json bson xml:"foo,omitempty" hcl:"bar,omitnested" yaml:"-"`,
+			exp: []*Tag{
+				{
+					Key:     "json",
+					Name:    "foo",
+					Options: []string{"omitempty"},
+				},
+				{
+					Key:     "bson",
+					Name:    "foo",
+					Options: []string{"omitempty"},
+				},
+				{
+					Key:     "xml",
+					Name:    "foo",
+					Options: []string{"omitempty"},
+				},
+				{
+					Key:     "hcl",
+					Name:    "bar",
+					Options: []string{"omitnested"},
+				},
+				{
+					Key:  "yaml",
+					Name: "-",
+				},
+			},
+			isMultipleKeys: true,
+		},
 	}
 
 	for _, ts := range test {
@@ -194,9 +247,11 @@ func TestParse(t *testing.T) {
 				t.Errorf("parse\n\twant: %#v\n\tgot : %#v", ts.exp, got)
 			}
 
-			trimmedInput := strings.TrimSpace(ts.tag)
-			if trimmedInput != tags.String() {
-				t.Errorf("parse string\n\twant: %#v\n\tgot : %#v", trimmedInput, tags.String())
+			if !ts.isMultipleKeys {
+				trimmedInput := strings.TrimSpace(ts.tag)
+				if trimmedInput != tags.String() {
+					t.Errorf("parse string\n\twant: %#v\n\tgot : %#v", trimmedInput, tags.String())
+				}
 			}
 		})
 	}

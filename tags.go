@@ -58,13 +58,17 @@ func Parse(tag string) (*Tags, error) {
 			break
 		}
 
-		// Scan to colon. A space, a quote or a control character is a syntax
+		// Scan to colon. A quote or a control character is a syntax
 		// error. Strictly speaking, control chars include the range [0x7f,
 		// 0x9f], not just [0x00, 0x1f], but in practice, we ignore the
 		// multi-byte control characters as it is simpler to inspect the tag's
 		// bytes than the tag's runes.
+		//
+		// A space before colon is not a syntax error anymore since Go 1.16
+		// introduced the possibility of multiple space separated keys.
+		// Issue: https://github.com/golang/go/issues/40281
 		i = 0
-		for i < len(tag) && tag[i] > ' ' && tag[i] != ':' && tag[i] != '"' && tag[i] != 0x7f {
+		for i < len(tag) && tag[i] != ':' && tag[i] != '"' && tag[i] != 0x7f {
 			i++
 		}
 
@@ -78,7 +82,8 @@ func Parse(tag string) (*Tags, error) {
 			return nil, errTagValueSyntax
 		}
 
-		key := string(tag[:i])
+		tagKeys := string(tag[:i])
+		keys := strings.Split(tagKeys, " ")
 		tag = tag[i+1:]
 
 		// Scan quoted string to find value.
@@ -108,11 +113,14 @@ func Parse(tag string) (*Tags, error) {
 			options = nil
 		}
 
-		tags = append(tags, &Tag{
-			Key:     key,
-			Name:    name,
-			Options: options,
-		})
+		for _, key := range keys {
+			tags = append(tags, &Tag{
+				Key:     key,
+				Name:    name,
+				Options: options,
+			})
+		}
+
 	}
 
 	if hasTag && len(tags) == 0 {
