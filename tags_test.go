@@ -307,7 +307,7 @@ func TestTags_Set_KeyDoesNotExist(t *testing.T) {
 		t.Fatal("setting tag with a nonexisting key should error")
 	}
 
-	if err != errKeyNotSet {
+	if err != ErrKeyNotSet {
 		t.Errorf("set\n\twant: %#v\n\tgot : %#v", errTagKeyMismatch, err)
 	}
 }
