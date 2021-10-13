@@ -102,10 +102,21 @@ func Parse(tag string) (*Tags, error) {
 		}
 
 		res := strings.Split(value, ",")
-		name := res[0]
-		options := res[1:]
-		if len(options) == 0 {
-			options = nil
+		name := ""
+		options := make([]string, len(res)-1)
+		// 针对protobuf特殊处理name
+		if key == "protobuf" {
+
+			for _, opt := range res {
+				if strings.HasPrefix(opt, "name=") {
+					name = opt
+					continue
+				}
+				options = append(options, opt)
+			}
+		} else {
+			name = res[0]
+			options = res[1:]
 		}
 
 		tags = append(tags, &Tag{
