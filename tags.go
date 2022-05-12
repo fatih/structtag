@@ -78,7 +78,7 @@ func Parse(tag string) (*Tags, error) {
 			return nil, errTagValueSyntax
 		}
 
-		key := string(tag[:i])
+		key := tag[:i]
 		tag = tag[i+1:]
 
 		// Scan quoted string to find value.
@@ -93,7 +93,7 @@ func Parse(tag string) (*Tags, error) {
 			return nil, errTagValueSyntax
 		}
 
-		qvalue := string(tag[:i+1])
+		qvalue := tag[:i+1]
 		tag = tag[i+1:]
 
 		value, err := strconv.Unquote(qvalue)
