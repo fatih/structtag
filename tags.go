@@ -125,7 +125,7 @@ func Parse(tag string) (*Tags, error) {
 }
 
 // Get returns the tag associated with the given key. If the key is present
-// in the tag the value (which may be empty) is returned. Otherwise the
+// in the tag the value (which may be empty) is returned. Otherwise, the
 // returned value will be the empty string. The ok return value reports whether
 // the tag exists or not (which the return value is nil).
 func (t *Tags) Get(key string) (*Tag, error) {
@@ -233,8 +233,7 @@ func (t *Tags) Tags() []*Tag {
 	return t.tags
 }
 
-// Tags returns a slice of tags. The order is the original tag order unless it
-// was changed.
+// Keys returns a slice of tags' keys.
 func (t *Tags) Keys() []string {
 	var keys []string
 	for _, tag := range t.tags {
