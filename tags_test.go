@@ -174,6 +174,22 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "tag with options containing escaped commas",
+			tag:  `jsonschema:"required,maxLength=1024,minLength=1,pattern=^[A-Za-z]([A-Za-z0-9_\\,:]*[A-Za-z0-9_])?$,description=some long description\\, that has both spaces and escaped comma characters"`,
+			exp: []*Tag{
+				{
+					Key:  "jsonschema",
+					Name: "required",
+					Options: []string{
+						"maxLength=1024",
+						"minLength=1",
+						"pattern=^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$",
+						"description=some long description, that has both spaces and escaped comma characters",
+					},
+				},
+			},
+		},
 	}
 
 	for _, ts := range test {
