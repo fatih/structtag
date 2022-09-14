@@ -96,12 +96,10 @@ func Parse(tag string) (*Tags, error) {
 		qvalue := tag[:i+1]
 		tag = tag[i+1:]
 
-		value, err := strconv.Unquote(qvalue)
+		res, err := splitWithEscapedComma(qvalue)
 		if err != nil {
 			return nil, errTagValueSyntax
 		}
-
-		res := strings.Split(value, ",")
 		name := res[0]
 		options := res[1:]
 		if len(options) == 0 {
@@ -122,6 +120,38 @@ func Parse(tag string) (*Tags, error) {
 	return &Tags{
 		tags: tags,
 	}, nil
+}
+
+// splitWithEscapedComma splits the input on unescaped ',' locations.
+// This allows having options contain regular expressions with ',' in them
+// strconv.Unquote() considers strings with '\\,' to be syntactically wrong
+// so unquoting is done after '\\,' is no longer an issue
+func splitWithEscapedComma(value string) ([]string, error) {
+	res := strings.Split(value[1:len(value)-1], ",")
+	ret := make([]string, len(res))
+	out := 0
+	for _, r := range res {
+		l := len(r)
+		t := r
+		wasEscape := false
+		if l > 1 && t[l-1] == '\\' {
+			wasEscape = true
+			t = t[0:l-2] + ","
+		}
+		ret[out] = ret[out] + t
+		if !wasEscape {
+			out++
+		}
+	}
+	for i := 0; i < out; i++ {
+		var err error
+		ret[i], err = strconv.Unquote(fmt.Sprintf("\"%s\"", ret[i]))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return ret[0:out], nil
 }
 
 // Get returns the tag associated with the given key. If the key is present
@@ -273,16 +303,17 @@ func (t *Tag) HasOption(opt string) bool {
 // Value returns the raw value of the tag, i.e. if the tag is
 // `json:"foo,omitempty", the Value is "foo,omitempty"
 func (t *Tag) Value() string {
-	options := strings.Join(t.Options, ",")
-	if options != "" {
-		return fmt.Sprintf(`%s,%s`, t.Name, options)
+	optCopy := make([]string, 0, len(t.Options)+1)
+	optCopy = append(optCopy, t.Name)
+	for _, v := range t.Options {
+		optCopy = append(optCopy, strings.ReplaceAll(v, ",", "\\,"))
 	}
-	return t.Name
+	return strings.Join(optCopy, ",")
 }
 
 // String reassembles the tag into a valid tag field representation
 func (t *Tag) String() string {
-	return fmt.Sprintf(`%s:%q`, t.Key, t.Value())
+	return fmt.Sprintf("%s:%q", t.Key, t.Value())
 }
 
 // GoString implements the fmt.GoStringer interface
