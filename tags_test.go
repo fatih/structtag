@@ -1,33 +1,28 @@
-package structtag
+package structtag_test
 
 import (
-	"reflect"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/fatih/structtag"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParse(t *testing.T) {
-
 	test := []struct {
-		name    string
-		tag     string
-		exp     []*Tag
-		invalid bool
+		name string
+		tag  string
+		exp  []*structtag.Tag
 	}{
 		{
 			name: "empty tag",
 			tag:  "",
 		},
 		{
-			name:    "tag with one key (invalid)",
-			tag:     "json",
-			invalid: true,
-		},
-		{
 			name: "tag with one key (valid)",
 			tag:  `json:""`,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key: "json",
 				},
@@ -36,7 +31,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "tag with one key and dash name",
 			tag:  `json:"-"`,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key:  "json",
 					Name: "-",
@@ -46,7 +41,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "tag with key and name",
 			tag:  `json:"foo"`,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key:  "json",
 					Name: "foo",
@@ -56,7 +51,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "tag with key, name and option",
 			tag:  `json:"foo,omitempty"`,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key:     "json",
 					Name:    "foo",
@@ -67,7 +62,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "tag with multiple keys",
 			tag:  `json:"" hcl:""`,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key: "json",
 				},
@@ -79,7 +74,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "tag with multiple keys and names",
 			tag:  `json:"foo" hcl:"foo"`,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key:  "json",
 					Name: "foo",
@@ -93,7 +88,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "tag with multiple keys and names",
 			tag:  `json:"foo" hcl:"foo"`,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key:  "json",
 					Name: "foo",
@@ -107,7 +102,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "tag with multiple keys and different names",
 			tag:  `json:"foo" hcl:"bar"`,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key:  "json",
 					Name: "foo",
@@ -121,7 +116,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "tag with multiple keys, different names and options",
 			tag:  `json:"foo,omitempty" structs:"bar,omitnested"`,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key:     "json",
 					Name:    "foo",
@@ -137,7 +132,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "tag with multiple keys, different names and options",
 			tag:  `json:"foo" structs:"bar,omitnested" hcl:"-"`,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key:  "json",
 					Name: "foo",
@@ -156,7 +151,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "tag with quoted name",
 			tag:  `json:"foo,bar:\"baz\""`,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key:     "json",
 					Name:    "foo",
@@ -167,7 +162,7 @@ func TestParse(t *testing.T) {
 		{
 			name: "tag with trailing space",
 			tag:  `json:"foo" `,
-			exp: []*Tag{
+			exp: []*structtag.Tag{
 				{
 					Key:  "json",
 					Name: "foo",
@@ -178,247 +173,224 @@ func TestParse(t *testing.T) {
 
 	for _, ts := range test {
 		t.Run(ts.name, func(t *testing.T) {
-			tags, err := Parse(ts.tag)
-			invalid := err != nil
-
-			if invalid != ts.invalid {
-				t.Errorf("invalid case\n\twant: %+v\n\tgot : %+v\n\terr : %s", ts.invalid, invalid, err)
-			}
-
-			if invalid {
-				return
-			}
-
-			got := tags.Tags()
-			if !reflect.DeepEqual(ts.exp, got) {
-				t.Errorf("parse\n\twant: %#v\n\tgot : %#v", ts.exp, got)
-			}
+			tags, err := structtag.Parse(ts.tag)
+			require.NoError(t, err)
+			require.Equal(t, ts.exp, tags.Tags())
 
 			trimmedInput := strings.TrimSpace(ts.tag)
-			if trimmedInput != tags.String() {
-				t.Errorf("parse string\n\twant: %#v\n\tgot : %#v", trimmedInput, tags.String())
-			}
+			require.Equal(t, trimmedInput, tags.String())
+		})
+	}
+}
+
+func TestParseErr(t *testing.T) {
+	for _, ts := range []struct {
+		name      string
+		tag       string
+		expectErr error
+	}{
+		{
+			name:      "EOF after key",
+			tag:       "json",
+			expectErr: structtag.ErrTagSyntax,
+		},
+		{
+			name:      "invalid value EOF after colon",
+			tag:       "json:",
+			expectErr: structtag.ErrTagSyntax,
+		},
+		{
+			name:      "missing key",
+			tag:       ":\"value\"",
+			expectErr: structtag.ErrTagKeySyntax,
+		},
+		{
+			name:      "invalid value",
+			tag:       "json:name",
+			expectErr: structtag.ErrTagValueSyntax,
+		},
+		{
+			name:      "invalid value EOF after reverse-solidus",
+			tag:       `json:"\`,
+			expectErr: structtag.ErrTagValueSyntax,
+		},
+		{
+			name:      "space after colon",
+			tag:       "json: ",
+			expectErr: structtag.ErrTagValueSyntax,
+		},
+	} {
+		t.Run(ts.name, func(t *testing.T) {
+			require.Error(t, ts.expectErr)
+			tags, err := structtag.Parse(ts.tag)
+			require.Error(t, err)
+			require.Equal(t, ts.expectErr, err)
+			require.Nil(t, tags)
 		})
 	}
 }
 
 func TestTags_Get(t *testing.T) {
-	tag := `json:"foo,omitempty" structs:"bar,omitnested"`
-
-	tags, err := Parse(tag)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tags, err := structtag.Parse(`json:"foo,omitempty" structs:"bar,omitnested"`)
+	require.NoError(t, err)
 
 	found, err := tags.Get("json")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	t.Run("String", func(t *testing.T) {
-		want := `json:"foo,omitempty"`
-		if found.String() != want {
-			t.Errorf("get\n\twant: %#v\n\tgot : %#v", want, found.String())
-		}
+		require.Equal(t, `json:"foo,omitempty"`, found.String())
 	})
 	t.Run("Value", func(t *testing.T) {
-		want := `foo,omitempty`
-		if found.Value() != want {
-			t.Errorf("get\n\twant: %#v\n\tgot : %#v", want, found.Value())
-		}
+		require.Equal(t, `foo,omitempty`, found.Value())
+	})
+}
+
+func TestTags_Keys(t *testing.T) {
+	t.Run("multiple tags", func(t *testing.T) {
+		tags, err := structtag.Parse(`json:"foo,omitempty" structs:"bar,omitnested"`)
+		require.NoError(t, err)
+
+		require.Equal(t, []string{"json", "structs"}, tags.Keys())
+	})
+
+	t.Run("no tags", func(t *testing.T) {
+		tags, err := structtag.Parse(``)
+		require.NoError(t, err)
+
+		require.Equal(t, []string{}, tags.Keys())
 	})
 }
 
 func TestTags_Set(t *testing.T) {
-	tag := `json:"foo,omitempty" structs:"bar,omitnested"`
+	tags, err := structtag.Parse(`json:"foo,omitempty" structs:"bar,omitnested"`)
+	require.NoError(t, err)
 
-	tags, err := Parse(tag)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = tags.Set(&Tag{
+	err = tags.Set(&structtag.Tag{
 		Key:     "json",
 		Name:    "bar",
 		Options: []string{},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	found, err := tags.Get("json")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	want := `json:"bar"`
-	if found.String() != want {
-		t.Errorf("set\n\twant: %#v\n\tgot : %#v", want, found.String())
-	}
+	require.Equal(t, `json:"bar"`, found.String())
 }
 
 func TestTags_Set_Append(t *testing.T) {
-	tag := `json:"foo,omitempty"`
+	tags, err := structtag.Parse(`json:"foo,omitempty"`)
+	require.NoError(t, err)
 
-	tags, err := Parse(tag)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = tags.Set(&Tag{
+	err = tags.Set(&structtag.Tag{
 		Key:     "structs",
 		Name:    "bar",
 		Options: []string{"omitnested"},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	found, err := tags.Get("structs")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	want := `structs:"bar,omitnested"`
-	if found.String() != want {
-		t.Errorf("set append\n\twant: %#v\n\tgot : %#v", want, found.String())
-	}
-
-	wantFull := `json:"foo,omitempty" structs:"bar,omitnested"`
-	if tags.String() != wantFull {
-		t.Errorf("set append\n\twant: %#v\n\tgot : %#v", wantFull, tags.String())
-	}
+	require.Equal(t, `structs:"bar,omitnested"`, found.String())
+	require.Equal(t, `json:"foo,omitempty" structs:"bar,omitnested"`, tags.String())
 }
 
 func TestTags_Set_KeyDoesNotExist(t *testing.T) {
-	tag := `json:"foo,omitempty" structs:"bar,omitnested"`
+	tags, err := structtag.Parse(`json:"foo,omitempty" structs:"bar,omitnested"`)
+	require.NoError(t, err)
 
-	tags, err := Parse(tag)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = tags.Set(&Tag{
+	err = tags.Set(&structtag.Tag{
 		Key:     "",
 		Name:    "bar",
 		Options: []string{},
 	})
-	if err == nil {
-		t.Fatal("setting tag with a nonexisting key should error")
-	}
+	require.Error(t, err, "setting tag with a nonexisting key should error")
+	require.Equal(t, structtag.ErrKeyNotSet, err)
+}
 
-	if err != errKeyNotSet {
-		t.Errorf("set\n\twant: %#v\n\tgot : %#v", errTagKeyMismatch, err)
-	}
+func TestTags_Set_TagDoesNotExist(t *testing.T) {
+	tags, err := structtag.Parse(`json:"foo,omitempty" structs:"bar,omitnested"`)
+	require.NoError(t, err)
+	tag, err := tags.Get("toml")
+	require.Equal(t, structtag.ErrTagNotExist, err)
+	require.Nil(t, tag)
 }
 
 func TestTags_Delete(t *testing.T) {
-	tag := `json:"foo,omitempty" structs:"bar,omitnested" hcl:"-"`
-
-	tags, err := Parse(tag)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tags, err := structtag.Parse(
+		`json:"foo,omitempty" structs:"bar,omitnested" hcl:"-"`,
+	)
+	require.NoError(t, err)
 
 	tags.Delete("structs")
-	if tags.Len() != 2 {
-		t.Fatalf("tag length should be 2, have %d", tags.Len())
-	}
+	require.Equal(t, 2, tags.Len())
 
 	found, err := tags.Get("json")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	want := `json:"foo,omitempty"`
-	if found.String() != want {
-		t.Errorf("delete\n\twant: %#v\n\tgot : %#v", want, found.String())
-	}
-
-	wantFull := `json:"foo,omitempty" hcl:"-"`
-	if tags.String() != wantFull {
-		t.Errorf("delete\n\twant: %#v\n\tgot : %#v", wantFull, tags.String())
-	}
+	require.Equal(t, `json:"foo,omitempty"`, found.String())
+	require.Equal(t, `json:"foo,omitempty" hcl:"-"`, tags.String())
 }
 
 func TestTags_DeleteOptions(t *testing.T) {
-	tag := `json:"foo,omitempty" structs:"bar,omitnested,omitempty" hcl:"-"`
-
-	tags, err := Parse(tag)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tags, err := structtag.Parse(
+		`json:"foo,omitempty" structs:"bar,omitnested,omitempty" hcl:"-"`,
+	)
+	require.NoError(t, err)
 
 	tags.DeleteOptions("json", "omitempty")
 
-	want := `json:"foo" structs:"bar,omitnested,omitempty" hcl:"-"`
-	if tags.String() != want {
-		t.Errorf("delete option\n\twant: %#v\n\tgot : %#v", want, tags.String())
-	}
+	require.Equal(t,
+		`json:"foo" structs:"bar,omitnested,omitempty" hcl:"-"`,
+		tags.String(),
+	)
 
 	tags.DeleteOptions("structs", "omitnested")
-	want = `json:"foo" structs:"bar,omitempty" hcl:"-"`
-	if tags.String() != want {
-		t.Errorf("delete option\n\twant: %#v\n\tgot : %#v", want, tags.String())
-	}
+	require.Equal(t, `json:"foo" structs:"bar,omitempty" hcl:"-"`, tags.String())
 }
 
 func TestTags_AddOption(t *testing.T) {
-	tag := `json:"foo" structs:"bar,omitempty" hcl:"-"`
-
-	tags, err := Parse(tag)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tags, err := structtag.Parse(`json:"foo" structs:"bar,omitempty" hcl:"-"`)
+	require.NoError(t, err)
 
 	tags.AddOptions("json", "omitempty")
 
-	want := `json:"foo,omitempty" structs:"bar,omitempty" hcl:"-"`
-	if tags.String() != want {
-		t.Errorf("add options\n\twant: %#v\n\tgot : %#v", want, tags.String())
-	}
+	require.Equal(t,
+		`json:"foo,omitempty" structs:"bar,omitempty" hcl:"-"`,
+		tags.String(),
+	)
 
 	// this shouldn't change anything
 	tags.AddOptions("structs", "omitempty")
 
-	want = `json:"foo,omitempty" structs:"bar,omitempty" hcl:"-"`
-	if tags.String() != want {
-		t.Errorf("add options\n\twant: %#v\n\tgot : %#v", want, tags.String())
-	}
+	require.Equal(t,
+		`json:"foo,omitempty" structs:"bar,omitempty" hcl:"-"`,
+		tags.String(),
+	)
 
 	// this should append to the existing
 	tags.AddOptions("structs", "omitnested", "flatten")
-	want = `json:"foo,omitempty" structs:"bar,omitempty,omitnested,flatten" hcl:"-"`
-	if tags.String() != want {
-		t.Errorf("add options\n\twant: %#v\n\tgot : %#v", want, tags.String())
-	}
+	require.Equal(t,
+		`json:"foo,omitempty" structs:"bar,omitempty,omitnested,flatten" hcl:"-"`,
+		tags.String(),
+	)
 }
 
 func TestTags_String(t *testing.T) {
 	tag := `json:"foo" structs:"bar,omitnested" hcl:"-"`
 
-	tags, err := Parse(tag)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tags, err := structtag.Parse(tag)
+	require.NoError(t, err)
 
-	if tags.String() != tag {
-		t.Errorf("string\n\twant: %#v\n\tgot : %#v", tag, tags.String())
-	}
+	require.Equal(t, tag, tags.String())
 }
 
 func TestTags_Sort(t *testing.T) {
-	tag := `json:"foo" structs:"bar,omitnested" hcl:"-"`
-
-	tags, err := Parse(tag)
-	if err != nil {
-		t.Fatal(err)
-	}
+	tags, err := structtag.Parse(`json:"foo" structs:"bar,omitnested" hcl:"-"`)
+	require.NoError(t, err)
 
 	sort.Sort(tags)
 
-	want := `hcl:"-" json:"foo" structs:"bar,omitnested"`
-	if tags.String() != want {
-		t.Errorf("string\n\twant: %#v\n\tgot : %#v", want, tags.String())
-	}
+	require.Equal(t, `hcl:"-" json:"foo" structs:"bar,omitnested"`, tags.String())
 }

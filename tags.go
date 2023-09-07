@@ -9,13 +9,13 @@ import (
 )
 
 var (
-	errTagSyntax      = errors.New("bad syntax for struct tag pair")
-	errTagKeySyntax   = errors.New("bad syntax for struct tag key")
-	errTagValueSyntax = errors.New("bad syntax for struct tag value")
+	ErrTagSyntax      = errors.New("bad syntax for struct tag pair")
+	ErrTagKeySyntax   = errors.New("bad syntax for struct tag key")
+	ErrTagValueSyntax = errors.New("bad syntax for struct tag value")
 
-	errKeyNotSet      = errors.New("tag key does not exist")
-	errTagNotExist    = errors.New("tag does not exist")
-	errTagKeyMismatch = errors.New("mismatch between key and tag.key")
+	ErrKeyNotSet      = errors.New("tag key does not exist")
+	ErrTagNotExist    = errors.New("tag does not exist")
+	ErrTagKeyMismatch = errors.New("mismatch between key and tag.key")
 )
 
 // Tags represent a set of tags from a single struct field
@@ -69,13 +69,13 @@ func Parse(tag string) (*Tags, error) {
 		}
 
 		if i == 0 {
-			return nil, errTagKeySyntax
+			return nil, ErrTagKeySyntax
 		}
 		if i+1 >= len(tag) || tag[i] != ':' {
-			return nil, errTagSyntax
+			return nil, ErrTagSyntax
 		}
 		if tag[i+1] != '"' {
-			return nil, errTagValueSyntax
+			return nil, ErrTagValueSyntax
 		}
 
 		key := tag[:i]
@@ -90,7 +90,7 @@ func Parse(tag string) (*Tags, error) {
 			i++
 		}
 		if i >= len(tag) {
-			return nil, errTagValueSyntax
+			return nil, ErrTagValueSyntax
 		}
 
 		qvalue := tag[:i+1]
@@ -98,7 +98,7 @@ func Parse(tag string) (*Tags, error) {
 
 		value, err := strconv.Unquote(qvalue)
 		if err != nil {
-			return nil, errTagValueSyntax
+			return nil, ErrTagValueSyntax
 		}
 
 		res := strings.Split(value, ",")
@@ -135,13 +135,13 @@ func (t *Tags) Get(key string) (*Tag, error) {
 		}
 	}
 
-	return nil, errTagNotExist
+	return nil, ErrTagNotExist
 }
 
 // Set sets the given tag. If the tag key already exists it'll override it
 func (t *Tags) Set(tag *Tag) error {
 	if tag.Key == "" {
-		return errKeyNotSet
+		return ErrKeyNotSet
 	}
 
 	added := false
@@ -235,9 +235,9 @@ func (t *Tags) Tags() []*Tag {
 
 // Keys returns a slice of tags' keys.
 func (t *Tags) Keys() []string {
-	var keys []string
-	for _, tag := range t.tags {
-		keys = append(keys, tag.Key)
+	keys := make([]string, len(t.tags))
+	for i := range t.tags {
+		keys[i] = t.tags[i].Key
 	}
 	return keys
 }
