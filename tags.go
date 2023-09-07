@@ -180,15 +180,6 @@ func (t *Tags) AddOptions(key string, options ...string) {
 
 // DeleteOptions deletes the given options for the given key
 func (t *Tags) DeleteOptions(key string, options ...string) {
-	hasOption := func(option string) bool {
-		for _, opt := range options {
-			if opt == option {
-				return true
-			}
-		}
-		return false
-	}
-
 	for i, tag := range t.tags {
 		if tag.Key != key {
 			continue
@@ -196,7 +187,7 @@ func (t *Tags) DeleteOptions(key string, options ...string) {
 
 		var updated []string
 		for _, opt := range tag.Options {
-			if !hasOption(opt) {
+			if !has(options, opt) {
 				updated = append(updated, opt)
 			}
 		}
@@ -208,18 +199,9 @@ func (t *Tags) DeleteOptions(key string, options ...string) {
 
 // Delete deletes the tag for the given keys
 func (t *Tags) Delete(keys ...string) {
-	hasKey := func(key string) bool {
-		for _, k := range keys {
-			if k == key {
-				return true
-			}
-		}
-		return false
-	}
-
 	var updated []*Tag
 	for _, tag := range t.tags {
-		if !hasKey(tag.Key) {
+		if !has(keys, tag.Key) {
 			updated = append(updated, tag)
 		}
 	}
@@ -261,13 +243,7 @@ func (t *Tags) String() string {
 
 // HasOption returns true if the given option is available in options
 func (t *Tag) HasOption(opt string) bool {
-	for _, tagOpt := range t.Options {
-		if tagOpt == opt {
-			return true
-		}
-	}
-
-	return false
+	return has(t.Options, opt)
 }
 
 // Value returns the raw value of the tag, i.e. if the tag is
@@ -311,4 +287,13 @@ func (t *Tags) Less(i int, j int) bool {
 
 func (t *Tags) Swap(i int, j int) {
 	t.tags[i], t.tags[j] = t.tags[j], t.tags[i]
+}
+
+func has[T comparable](s []T, item T) bool {
+	for i := range s {
+		if s[i] == item {
+			return true
+		}
+	}
+	return false
 }
