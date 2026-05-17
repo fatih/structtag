@@ -8,14 +8,25 @@ import (
 	"strings"
 )
 
+// Exported sentinel errors so callers can match with errors.Is instead of
+// comparing error strings. The lowercase aliases stay around for existing
+// internal call sites and to keep diffs noise-free.
 var (
-	errTagSyntax      = errors.New("bad syntax for struct tag pair")
-	errTagKeySyntax   = errors.New("bad syntax for struct tag key")
-	errTagValueSyntax = errors.New("bad syntax for struct tag value")
+	ErrTagSyntax      = errors.New("bad syntax for struct tag pair")
+	ErrTagKeySyntax   = errors.New("bad syntax for struct tag key")
+	ErrTagValueSyntax = errors.New("bad syntax for struct tag value")
 
-	errKeyNotSet      = errors.New("tag key does not exist")
-	errTagNotExist    = errors.New("tag does not exist")
-	errTagKeyMismatch = errors.New("mismatch between key and tag.key")
+	ErrKeyNotSet      = errors.New("tag key does not exist")
+	ErrTagNotExist    = errors.New("tag does not exist")
+	ErrTagKeyMismatch = errors.New("mismatch between key and tag.key")
+
+	errTagSyntax      = ErrTagSyntax
+	errTagKeySyntax   = ErrTagKeySyntax
+	errTagValueSyntax = ErrTagValueSyntax
+
+	errKeyNotSet      = ErrKeyNotSet
+	errTagNotExist    = ErrTagNotExist
+	errTagKeyMismatch = ErrTagKeyMismatch
 )
 
 // Tags represent a set of tags from a single struct field
