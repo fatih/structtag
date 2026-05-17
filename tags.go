@@ -124,10 +124,9 @@ func Parse(tag string) (*Tags, error) {
 	}, nil
 }
 
-// Get returns the tag associated with the given key. If the key is present
-// in the tag the value (which may be empty) is returned. Otherwise, the
-// returned value will be the empty string. The ok return value reports whether
-// the tag exists or not (which the return value is nil).
+// Get returns the tag associated with the given key. If no tag is found with
+// that key, Get returns a nil *Tag and a non-nil error reporting that the tag
+// does not exist. The error is the package-level errTagNotExist value.
 func (t *Tags) Get(key string) (*Tag, error) {
 	for _, tag := range t.tags {
 		if tag.Key == key {
