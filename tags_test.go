@@ -174,6 +174,69 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "tag with escaped comma in option",
+			tag:  `json:"foo,bar\\,baz"`,
+			exp: []*Tag{
+				{
+					Key:     "json",
+					Name:    "foo",
+					Options: []string{`bar\,baz`},
+				},
+			},
+		},
+		{
+			name: "tag with regex pattern and description containing escaped commas",
+			tag:  `json:"reason" jsonschema:"required,maxLength=1024,pattern=^[A-Za-z]([A-Za-z0-9_\\,:]*[A-Za-z0-9_])?$,description=A reason\\, hopefully a valid one"`,
+			exp: []*Tag{
+				{
+					Key:  "json",
+					Name: "reason",
+				},
+				{
+					Key:  "jsonschema",
+					Name: "required",
+					Options: []string{
+						"maxLength=1024",
+						`pattern=^[A-Za-z]([A-Za-z0-9_\,:]*[A-Za-z0-9_])?$`,
+						`description=A reason\, hopefully a valid one`,
+					},
+				},
+			},
+		},
+		{
+			name: "tag with escaped comma in name",
+			tag:  `json:"foo\\,bar,opt1"`,
+			exp: []*Tag{
+				{
+					Key:     "json",
+					Name:    `foo\,bar`,
+					Options: []string{"opt1"},
+				},
+			},
+		},
+		{
+			name: "tag with multiple escaped commas in option",
+			tag:  `json:"foo,a\\,b\\,c,d"`,
+			exp: []*Tag{
+				{
+					Key:     "json",
+					Name:    "foo",
+					Options: []string{`a\,b\,c`, "d"},
+				},
+			},
+		},
+		{
+			name: "tag with escaped backslash before comma",
+			tag:  `json:"foo,bar\\\\,baz"`,
+			exp: []*Tag{
+				{
+					Key:     "json",
+					Name:    "foo",
+					Options: []string{`bar\\`, "baz"},
+				},
+			},
+		},
 	}
 
 	for _, ts := range test {
@@ -422,3 +485,46 @@ func TestTags_Sort(t *testing.T) {
 		t.Errorf("string\n\twant: %#v\n\tgot : %#v", want, tags.String())
 	}
 }
+
+func TestTags_EscapedCommas(t *testing.T) {
+	raw := `json:"reason" jsonschema:"required,pattern=^[A-Za-z]([A-Za-z0-9_\\,:]*[A-Za-z0-9_])?$,description=A reason\\, hopefully a valid one"`
+
+	tags, err := Parse(raw)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %s", err)
+	}
+
+	jsTag, err := tags.Get("jsonschema")
+	if err != nil {
+		t.Fatalf("unexpected get error: %s", err)
+	}
+
+	if jsTag.Name != "required" {
+		t.Errorf("want name 'required', got %q", jsTag.Name)
+	}
+
+	patternOpt := `pattern=^[A-Za-z]([A-Za-z0-9_\,:]*[A-Za-z0-9_])?$`
+	descOpt := `description=A reason\, hopefully a valid one`
+
+	if !jsTag.HasOption(patternOpt) {
+		t.Errorf("expected jsonschema tag to have option %q", patternOpt)
+	}
+
+	if !jsTag.HasOption(descOpt) {
+		t.Errorf("expected jsonschema tag to have option %q", descOpt)
+	}
+
+	// Test AddOptions with escaped comma
+	newOpt := `custom=a\,b`
+	tags.AddOptions("jsonschema", newOpt)
+	if !jsTag.HasOption(newOpt) {
+		t.Errorf("expected jsonschema tag to have newly added option %q", newOpt)
+	}
+
+	// Test DeleteOptions with escaped comma
+	tags.DeleteOptions("jsonschema", patternOpt)
+	if jsTag.HasOption(patternOpt) {
+		t.Errorf("expected jsonschema tag to not have deleted option %q", patternOpt)
+	}
+}
+

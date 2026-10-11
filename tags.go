@@ -101,7 +101,7 @@ func Parse(tag string) (*Tags, error) {
 			return nil, errTagValueSyntax
 		}
 
-		res := strings.Split(value, ",")
+		res := split(value)
 		name := res[0]
 		options := res[1:]
 		if len(options) == 0 {
@@ -312,3 +312,24 @@ func (t *Tags) Less(i int, j int) bool {
 func (t *Tags) Swap(i int, j int) {
 	t.tags[i], t.tags[j] = t.tags[j], t.tags[i]
 }
+
+// split splits value by comma, respecting backslash-escaped commas (\,).
+func split(value string) []string {
+	var res []string
+	start := 0
+	for i := 0; i < len(value); i++ {
+		if value[i] == ',' {
+			backslashes := 0
+			for j := i - 1; j >= 0 && value[j] == '\\'; j-- {
+				backslashes++
+			}
+			if backslashes%2 == 0 {
+				res = append(res, value[start:i])
+				start = i + 1
+			}
+		}
+	}
+	res = append(res, value[start:])
+	return res
+}
+
