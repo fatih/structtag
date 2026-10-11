@@ -1,6 +1,7 @@
 package structtag
 
 import (
+	"errors"
 	"reflect"
 	"sort"
 	"strings"
@@ -422,3 +423,113 @@ func TestTags_Sort(t *testing.T) {
 		t.Errorf("string\n\twant: %#v\n\tgot : %#v", want, tags.String())
 	}
 }
+
+func TestTags_Get_TagNotExist(t *testing.T) {
+	tag := `json:"foo,omitempty" structs:"bar,omitnested"`
+
+	tags, err := Parse(tag)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found, err := tags.Get("nonexistent")
+	if found != nil {
+		t.Fatalf("expected nil tag for nonexistent key, got: %v", found)
+	}
+	if err == nil {
+		t.Fatal("expected error for nonexistent key, got nil")
+	}
+
+	if !errors.Is(err, ErrTagNotExist) {
+		t.Errorf("errors.Is(err, ErrTagNotExist)\n\twant: true\n\tgot : false (err: %v)", err)
+	}
+
+	// Verify backward-compatible unexported alias.
+	if !errors.Is(err, errTagNotExist) {
+		t.Errorf("errors.Is(err, errTagNotExist)\n\twant: true\n\tgot : false (err: %v)", err)
+	}
+
+	if errors.Is(err, ErrKeyNotExist) {
+		t.Errorf("errors.Is(err, ErrKeyNotExist)\n\twant: false\n\tgot : true")
+	}
+}
+
+func TestTags_Set_KeyNotExist(t *testing.T) {
+	tag := `json:"foo,omitempty"`
+
+	tags, err := Parse(tag)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = tags.Set(&Tag{
+		Key:  "",
+		Name: "bar",
+	})
+	if err == nil {
+		t.Fatal("setting tag with empty key should error")
+	}
+
+	if !errors.Is(err, ErrKeyNotExist) {
+		t.Errorf("errors.Is(err, ErrKeyNotExist)\n\twant: true\n\tgot : false (err: %v)", err)
+	}
+
+	// Verify backward-compatible aliases.
+	if !errors.Is(err, ErrKeyNotSet) {
+		t.Errorf("errors.Is(err, ErrKeyNotSet)\n\twant: true\n\tgot : false (err: %v)", err)
+	}
+	if !errors.Is(err, errKeyNotSet) {
+		t.Errorf("errors.Is(err, errKeyNotSet)\n\twant: true\n\tgot : false (err: %v)", err)
+	}
+	if !errors.Is(err, errKeyNotExist) {
+		t.Errorf("errors.Is(err, errKeyNotExist)\n\twant: true\n\tgot : false (err: %v)", err)
+	}
+
+	if errors.Is(err, ErrTagNotExist) {
+		t.Errorf("errors.Is(err, ErrTagNotExist)\n\twant: false\n\tgot : true")
+	}
+}
+
+func TestSentinelErrors(t *testing.T) {
+	t.Run("ParseSyntaxErrors", func(t *testing.T) {
+		testCases := []struct {
+			name     string
+			tag      string
+			expected error
+		}{
+			{
+				name:     "ErrTagKeySyntax",
+				tag:      `:"foo"`,
+				expected: ErrTagKeySyntax,
+			},
+			{
+				name:     "ErrTagSyntax",
+				tag:      "json:",
+				expected: ErrTagSyntax,
+			},
+			{
+				name:     "ErrTagValueSyntax_Unclosed",
+				tag:      `json:"`,
+				expected: ErrTagValueSyntax,
+			},
+			{
+				name:     "ErrTagValueSyntax_NoQuotes",
+				tag:      "json:foo",
+				expected: ErrTagValueSyntax,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err := Parse(tc.tag)
+				if err == nil {
+					t.Fatalf("expected error for tag %q, got nil", tc.tag)
+				}
+				if !errors.Is(err, tc.expected) {
+					t.Errorf("errors.Is(err, %v)\n\twant: true\n\tgot : false (err: %v)", tc.expected, err)
+				}
+			})
+		}
+	})
+}
+
