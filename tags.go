@@ -9,13 +9,34 @@ import (
 )
 
 var (
-	errTagSyntax      = errors.New("bad syntax for struct tag pair")
-	errTagKeySyntax   = errors.New("bad syntax for struct tag key")
-	errTagValueSyntax = errors.New("bad syntax for struct tag value")
+	// ErrTagSyntax is returned when a struct tag pair has invalid syntax.
+	ErrTagSyntax = errors.New("bad syntax for struct tag pair")
 
-	errKeyNotSet      = errors.New("tag key does not exist")
-	errTagNotExist    = errors.New("tag does not exist")
-	errTagKeyMismatch = errors.New("mismatch between key and tag.key")
+	// ErrTagKeySyntax is returned when a struct tag key has invalid syntax.
+	ErrTagKeySyntax = errors.New("bad syntax for struct tag key")
+
+	// ErrTagValueSyntax is returned when a struct tag value has invalid syntax.
+	ErrTagValueSyntax = errors.New("bad syntax for struct tag value")
+
+	// ErrKeyNotExist is returned when a tag key is empty or not set.
+	ErrKeyNotExist = errors.New("key does not exist")
+
+	// ErrKeyNotSet is an alias for ErrKeyNotExist for backward compatibility.
+	ErrKeyNotSet = ErrKeyNotExist
+
+	// ErrTagNotExist is returned when a requested tag does not exist.
+	ErrTagNotExist = errors.New("tag does not exist")
+
+	// ErrTagKeyMismatch is returned when there is a mismatch between key and tag.key.
+	ErrTagKeyMismatch = errors.New("mismatch between key and tag.key")
+
+	errTagSyntax      = ErrTagSyntax
+	errTagKeySyntax   = ErrTagKeySyntax
+	errTagValueSyntax = ErrTagValueSyntax
+	errKeyNotSet      = ErrKeyNotExist
+	errKeyNotExist    = ErrKeyNotExist
+	errTagNotExist    = ErrTagNotExist
+	errTagKeyMismatch = ErrTagKeyMismatch
 )
 
 // Tags represent a set of tags from a single struct field
@@ -69,13 +90,13 @@ func Parse(tag string) (*Tags, error) {
 		}
 
 		if i == 0 {
-			return nil, errTagKeySyntax
+			return nil, ErrTagKeySyntax
 		}
 		if i+1 >= len(tag) || tag[i] != ':' {
-			return nil, errTagSyntax
+			return nil, ErrTagSyntax
 		}
 		if tag[i+1] != '"' {
-			return nil, errTagValueSyntax
+			return nil, ErrTagValueSyntax
 		}
 
 		key := tag[:i]
@@ -90,7 +111,7 @@ func Parse(tag string) (*Tags, error) {
 			i++
 		}
 		if i >= len(tag) {
-			return nil, errTagValueSyntax
+			return nil, ErrTagValueSyntax
 		}
 
 		qvalue := tag[:i+1]
@@ -98,7 +119,7 @@ func Parse(tag string) (*Tags, error) {
 
 		value, err := strconv.Unquote(qvalue)
 		if err != nil {
-			return nil, errTagValueSyntax
+			return nil, ErrTagValueSyntax
 		}
 
 		res := strings.Split(value, ",")
@@ -135,13 +156,13 @@ func (t *Tags) Get(key string) (*Tag, error) {
 		}
 	}
 
-	return nil, errTagNotExist
+	return nil, ErrTagNotExist
 }
 
 // Set sets the given tag. If the tag key already exists it'll override it
 func (t *Tags) Set(tag *Tag) error {
 	if tag.Key == "" {
-		return errKeyNotSet
+		return ErrKeyNotExist
 	}
 
 	added := false
